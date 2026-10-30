@@ -48,9 +48,9 @@
   .bar { display: flex; align-items: center; gap: 24px; min-height: 64px; padding: 0 24px; }
   .wordmark { font-family: var(--display); font-size: 22px; letter-spacing: .2px; color: var(--ink); text-decoration: none; }
   .nav { display: flex; gap: 2px; margin: 0 auto; }
-  .nav a { font-size: 14px; font-weight: 400; letter-spacing: -.2px; color: var(--slate); text-decoration: none; padding: 6px 10px; border-radius: 8px; white-space: nowrap; }
+  .nav a { font-size: 14px; font-weight: 400; letter-spacing: -.2px; color: var(--slate); text-decoration: none; padding: 6px 10px; border-radius: 8px; white-space: nowrap; transition: color .2s ease; }
   .nav a:hover { color: var(--graphite); }
-  .nav a[aria-current] { color: var(--ink); font-weight: 500; }
+  .nav a[aria-current] { color: var(--ink); font-weight: 500; pointer-events: none; }
   .btn-rect { display: inline-flex; align-items: center; gap: 4px; background: var(--ink); color: #fff; text-decoration: none; font-size: 14px; font-weight: 500; padding: 7px 10px 7px 14px; border-radius: 8px; box-shadow: var(--sh-press); }
   .btn-rect:hover { background: #2a2a2a; }
 
@@ -148,6 +148,27 @@
   footer .bar a { color: var(--slate); text-decoration: none; margin-left: 16px; }
   footer .bar a:hover { color: var(--ink); }
 
+  /* Slide between the tools (Chrome, Edge, Safari 18.2+; other browsers just load the page).
+     The header stays still, the page slides, and each menu label fades between grey and black. */
+  @view-transition { navigation: auto; }
+  header.band { view-transition-name: site-header; }
+  main { view-transition-name: page; }
+  .nav a:nth-child(1) { view-transition-name: nav-1; }
+  .nav a:nth-child(2) { view-transition-name: nav-2; }
+  .nav a:nth-child(3) { view-transition-name: nav-3; }
+  ::view-transition-group(site-header), ::view-transition-new(site-header) { animation: none; }
+  ::view-transition-old(site-header) { display: none; }
+  ::view-transition-group(page) { animation-duration: 540ms; animation-timing-function: cubic-bezier(.22,.61,.36,1); }
+  ::view-transition-old(page) { animation: 200ms cubic-bezier(.4,0,1,1) both vt-out-left; mix-blend-mode: normal; }
+  ::view-transition-new(page) { animation: 420ms cubic-bezier(0,0,.2,1) 120ms both vt-in-right; mix-blend-mode: normal; }
+  html:active-view-transition-type(back)::view-transition-old(page) { animation-name: vt-out-right; }
+  html:active-view-transition-type(back)::view-transition-new(page) { animation-name: vt-in-left; }
+  ::view-transition-group(nav-1), ::view-transition-group(nav-2), ::view-transition-group(nav-3) { animation-duration: 420ms; animation-timing-function: ease; }
+  @keyframes vt-out-left { to { transform: translateX(-40px); opacity: 0; } }
+  @keyframes vt-out-right { to { transform: translateX(40px); opacity: 0; } }
+  @keyframes vt-in-right { from { transform: translateX(72px); opacity: 0; } }
+  @keyframes vt-in-left { from { transform: translateX(-72px); opacity: 0; } }
+  @media (prefers-reduced-motion: reduce) { @view-transition { navigation: none; } }
   @media (max-width: 960px) {
     .hero { grid-template-columns: 1fr; padding: 32px 24px; gap: 36px; }
     .cards { grid-template-columns: 1fr; }
@@ -160,6 +181,16 @@
     .pad { padding: 12px; }
   }
 </style>
+<script>
+  // Slide left when moving right in the menu, and right when moving back.
+  addEventListener('pagereveal', e => {
+    const from = window.navigation && navigation.activation && navigation.activation.from;
+    if (!e.viewTransition || !e.viewTransition.types || !from) return;
+    const order = ['excel-data-cleaner', 'excel-report-merger', 'automation-roi-calculator'];
+    const at = url => order.findIndex(p => new URL(url).pathname.includes('/' + p + '/'));
+    e.viewTransition.types.add(at(from.url) > at(location.href) ? 'back' : 'forward');
+  });
+</script>
 </head>
 <body>
 <header class="band">
