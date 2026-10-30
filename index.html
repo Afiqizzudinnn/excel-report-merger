@@ -7,146 +7,282 @@
 <meta name="description" content="Combine Excel files from different branches or teams into one sheet and one summary, even when the columns do not line up.">
 <link rel="preconnect" href="https://fonts.googleapis.com">
 <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
-<link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&display=swap" rel="stylesheet">
+<link href="https://fonts.googleapis.com/css2?family=Cal+Sans&family=Inter:wght@300;400;500;600&display=swap" rel="stylesheet">
 <script src="https://cdn.sheetjs.com/xlsx-0.20.3/package/dist/xlsx.full.min.js"></script>
 <style>
+  /* Cal.com style: monochrome, one blue accent, pill buttons, soft cards on paper. */
   :root {
-    --bg: #f5f7fa; --surface: #ffffff; --surface-2: #f0f3f7; --text: #152232; --muted: #5d6b7b; --border: #dfe4ea;
-    --primary: #1f3a5f; --primary-ink: #ffffff; --primary-soft: #e7eef7;
-    --good: #0e7a55; --good-soft: #e3f3ec; --warn: #a15c07; --warn-soft: #fdf1df; --changed: #fff1b8;
-    --radius: 12px; --shadow: 0 1px 2px rgba(16,24,40,.05), 0 4px 16px rgba(16,24,40,.06);
-  }
-  @media (prefers-color-scheme: dark) {
-    :root {
-      --bg: #0e131a; --surface: #151c25; --surface-2: #1b2430; --text: #e5eaf0; --muted: #98a5b4; --border: #27323f;
-      --primary: #9dbce3; --primary-ink: #0e131a; --primary-soft: #1d2a3a;
-      --good: #53c79a; --good-soft: #15302a; --warn: #e7a54a; --warn-soft: #33270f; --changed: #4b3f10; --shadow: none;
-    }
+    --ink: #101010; --graphite: #242424; --slate: #6b7280; --stone: #898989; --silver: #e5e7eb;
+    --paper: #f4f4f4; --white: #ffffff; --blue: #0099ff; --info: #eff6fe; --line: #e2e2e2; --mark: #c4c4c4;
+    --sh-card: rgba(36,36,36,.05) 0 4px 8px 0;
+    --sh-hover: rgba(36,36,36,.7) 0 1px 5px -4px, rgba(36,36,36,.05) 0 4px 8px 0;
+    --sh-ring: rgba(19,19,22,.7) 0 1px 5px -4px, rgba(34,42,53,.08) 0 0 0 1px, rgba(34,42,53,.05) 0 4px 8px 0;
+    --sh-chip: rgba(0,0,0,.1) 0 1px 3px 0, rgba(0,0,0,.06) 0 0 2px 0;
+    --sh-press: rgba(255,255,255,.15) 0 2px 0 0 inset;
+    --display: "Cal Sans", Poppins, ui-sans-serif, system-ui, sans-serif;
+    --ui: Inter, ui-sans-serif, system-ui, -apple-system, "Segoe UI", sans-serif;
+    --mono: ui-monospace, SFMono-Regular, Consolas, monospace;
   }
   * { box-sizing: border-box; }
-  body { margin: 0; font-family: Inter, "Segoe UI", system-ui, -apple-system, sans-serif; background: var(--bg); color: var(--text); line-height: 1.5; font-size: 15px; }
-  .wrap { max-width: 1040px; margin: 0 auto; padding: 0 16px; }
-  header.top { border-bottom: 1px solid var(--border); background: var(--surface); }
-  .top .wrap { display: flex; align-items: center; justify-content: space-between; min-height: 56px; gap: 12px; flex-wrap: wrap; }
-  .brand { font-weight: 700; color: var(--text); text-decoration: none; font-size: 14px; }
-  .brand span { color: var(--muted); font-weight: 500; }
-  nav.tools { display: flex; gap: 4px; flex-wrap: wrap; }
-  nav.tools a { font-size: 13px; color: var(--muted); text-decoration: none; padding: 6px 10px; border-radius: 8px; }
-  nav.tools a:hover { color: var(--text); }
-  nav.tools a[aria-current] { background: var(--primary-soft); color: var(--primary); font-weight: 600; }
-  .hero { padding: 40px 0 24px; }
-  .hero h1 { font-size: 32px; line-height: 1.15; margin: 0 0 8px; letter-spacing: -.5px; }
-  .hero p { margin: 0; color: var(--muted); font-size: 17px; max-width: 660px; }
-  .badges { display: flex; gap: 8px; flex-wrap: wrap; margin-top: 16px; }
-  .badge { font-size: 12.5px; padding: 4px 10px; border-radius: 999px; background: var(--surface); border: 1px solid var(--border); color: var(--muted); }
-  .card { background: var(--surface); border: 1px solid var(--border); border-radius: var(--radius); box-shadow: var(--shadow); padding: 20px; margin-bottom: 16px; }
-  .step { font-size: 12px; font-weight: 700; letter-spacing: .8px; text-transform: uppercase; color: var(--primary); margin-bottom: 4px; }
-  .card h2 { font-size: 18px; margin: 0 0 14px; }
-  .card h3 { font-size: 15px; margin: 22px 0 8px; }
-  .drop { border: 2px dashed var(--border); border-radius: var(--radius); padding: 28px 16px; text-align: center; cursor: pointer; background: var(--surface-2); transition: .15s; }
-  .drop:hover, .drop.over, .drop:focus { border-color: var(--primary); background: var(--primary-soft); outline: none; }
-  .drop b { display: block; font-size: 16px; }
-  .btn { font: inherit; font-weight: 600; font-size: 14px; border-radius: 8px; padding: 10px 16px; border: 1px solid transparent; cursor: pointer; }
-  .btn.primary { background: var(--primary); color: var(--primary-ink); }
-  .btn.ghost { background: transparent; border-color: var(--border); color: var(--text); }
-  .btn:disabled { opacity: .45; cursor: not-allowed; }
-  .link { font: inherit; background: none; border: 0; padding: 0; color: var(--primary); font-weight: 600; cursor: pointer; text-decoration: underline; }
-  .stats { display: grid; grid-template-columns: repeat(auto-fit, minmax(150px, 1fr)); gap: 10px; margin-bottom: 12px; }
-  .stat { background: var(--surface-2); border-radius: 10px; padding: 12px 14px; }
-  .stat .n { font-size: 22px; font-weight: 700; letter-spacing: -.3px; }
-  .stat .l { font-size: 13px; color: var(--muted); }
-  .muted { color: var(--muted); }
-  .notice { background: var(--warn-soft); color: var(--warn); padding: 10px 12px; border-radius: 8px; font-size: 14px; margin-top: 12px; }
-  .table-wrap { overflow: auto; max-height: 440px; border: 1px solid var(--border); border-radius: 10px; }
-  table { border-collapse: collapse; width: 100%; font-size: 13px; }
-  th, td { padding: 7px 10px; border-bottom: 1px solid var(--border); text-align: left; white-space: nowrap; }
-  th { position: sticky; top: 0; background: var(--surface-2); font-weight: 600; z-index: 1; }
-  td.num, th.num { text-align: right; font-variant-numeric: tabular-nums; }
-  footer { padding: 32px 0 48px; color: var(--muted); font-size: 13px; }
-  footer a { color: var(--primary); }
+  [hidden] { display: none !important; }
+  html { color-scheme: light; }
+  body { margin: 0; background: var(--paper); color: var(--graphite); font: 300 16px/1.5 var(--ui); letter-spacing: -0.19px; -webkit-font-smoothing: antialiased; }
+  a { color: inherit; }
+  button, input, select { font: inherit; letter-spacing: inherit; color: inherit; }
+  h1, h2, h3 { font-family: var(--display); font-weight: 400; color: var(--graphite); margin: 0; }
+  b { font-weight: 500; color: var(--graphite); }
+  code { font: 400 12px/1.4 var(--mono); letter-spacing: 0; background: var(--paper); padding: 1px 5px; border-radius: 4px; }
+  .chev { width: 14px; height: 14px; fill: none; stroke: currentColor; stroke-width: 1.6; stroke-linecap: round; stroke-linejoin: round; flex: none; }
 
-  select { font: inherit; padding: 7px 10px; border-radius: 8px; border: 1px solid var(--border); background: var(--surface); color: var(--text); }
-  .files { list-style: none; padding: 0; margin: 14px 0 0; display: grid; gap: 8px; }
-  .files li { display: flex; align-items: center; gap: 10px; padding: 10px 12px; border: 1px solid var(--border); border-radius: 10px; font-size: 14px; }
-  .files li .meta { color: var(--muted); font-size: 13px; margin-left: auto; white-space: nowrap; }
-  .files li button { background: none; border: 0; color: var(--muted); font-size: 18px; line-height: 1; cursor: pointer; padding: 2px 6px; border-radius: 6px; }
-  .files li button:hover { background: var(--surface-2); color: var(--text); }
-  .check { display: flex; gap: 8px; align-items: center; margin: 14px 0 18px; font-size: 14px; }
-  .check input { accent-color: var(--primary); }
-  td.yes { color: var(--good); font-weight: 600; text-align: center; }
-  td.no { color: var(--warn); background: var(--warn-soft); text-align: center; }
-  tr.total td { font-weight: 700; background: var(--surface-2); }
-  .pickers { display: flex; gap: 12px; flex-wrap: wrap; align-items: center; margin-bottom: 10px; font-size: 14px; }
-  .warnlist { margin: 8px 0 0; padding-left: 18px; color: var(--warn); font-size: 13px; }
-  .actions { display: flex; gap: 12px; align-items: center; flex-wrap: wrap; margin-top: 18px; }
+  /* Drafting frame: faint guide lines with a + where they cross */
+  .band { border-bottom: 1px solid var(--line); }
+  .frame { position: relative; width: min(1200px, 100% - 32px); margin: 0 auto; border-left: 1px solid var(--line); border-right: 1px solid var(--line); }
+  .frame::before, .frame::after { content: ""; position: absolute; bottom: -5px; width: 9px; height: 9px; z-index: 1;
+    background: linear-gradient(var(--mark), var(--mark)) center / 9px 1px no-repeat, linear-gradient(var(--mark), var(--mark)) center / 1px 9px no-repeat; }
+  .frame::before { left: -5px; }
+  .frame::after { right: -5px; }
+  .pad { padding: 24px; }
+  .section { padding: 96px 48px; }
+
+  /* Header */
+  .bar { display: flex; align-items: center; gap: 24px; min-height: 64px; padding: 0 24px; }
+  .wordmark { font-family: var(--display); font-size: 22px; letter-spacing: .2px; color: var(--ink); text-decoration: none; }
+  .nav { display: flex; gap: 2px; margin: 0 auto; }
+  .nav a { font-size: 14px; font-weight: 400; letter-spacing: -.2px; color: var(--slate); text-decoration: none; padding: 6px 10px; border-radius: 8px; white-space: nowrap; }
+  .nav a:hover { color: var(--graphite); }
+  .nav a[aria-current] { color: var(--ink); font-weight: 500; }
+  .btn-rect { display: inline-flex; align-items: center; gap: 4px; background: var(--ink); color: #fff; text-decoration: none; font-size: 14px; font-weight: 500; padding: 7px 10px 7px 14px; border-radius: 8px; box-shadow: var(--sh-press); }
+  .btn-rect:hover { background: #2a2a2a; }
+
+  /* Buttons and small controls */
+  .pill { display: inline-flex; align-items: center; justify-content: center; gap: 4px; border: 0; border-radius: 9999px; padding: 10px 20px; font-size: 14px; font-weight: 500; letter-spacing: -.2px; text-decoration: none; cursor: pointer; transition: background .15s, box-shadow .15s; }
+  .pill.ink { background: var(--ink); color: #fff; box-shadow: var(--sh-press); }
+  .pill.ink:hover { background: #2a2a2a; }
+  .pill.soft { background: var(--paper); color: var(--graphite); }
+  .pill.soft:hover { background: #ebebeb; }
+  .pill.wide { width: 100%; }
+  .pill:disabled { opacity: .35; cursor: not-allowed; }
+  .tag { display: inline-flex; align-items: center; gap: 2px; font-size: 12px; font-weight: 400; letter-spacing: -.24px; color: var(--graphite); background: #fff; border-radius: 9999px; padding: 3px 8px 3px 10px; text-decoration: none; box-shadow: rgba(34,42,53,.1) 0 0 0 1px, rgba(34,42,53,.05) 0 2px 4px 0; }
+  .seg { display: inline-flex; gap: 2px; padding: 2px; background: var(--paper); border-radius: 8px; }
+  .seg > * { border: 0; background: transparent; border-radius: 6px; padding: 4px 10px; font-size: 13px; font-weight: 400; color: var(--slate); cursor: pointer; white-space: nowrap; }
+  .seg > [aria-checked="true"], .seg > [aria-selected="true"] { background: #fff; color: var(--ink); font-weight: 500; box-shadow: var(--sh-chip); }
+  .fine { font-size: 12px; letter-spacing: -.24px; color: var(--slate); }
+  .note { margin: 12px 0 0; font-size: 13.5px; background: var(--info); border-radius: 8px; padding: 10px 12px; box-shadow: inset 2px 0 0 var(--blue); }
+  select { background: #fff; border: 1px solid var(--silver); border-radius: 8px; padding: 6px 10px; font-size: 14px; font-weight: 400; }
+  select:focus { outline: none; border-color: var(--graphite); box-shadow: 0 0 0 3px rgba(16,16,16,.08); }
+
+  /* Hero */
+  .hero { display: grid; grid-template-columns: minmax(0, 1fr) minmax(0, 1.05fr); gap: 56px; align-items: center; background: #fff; border-radius: 12px; box-shadow: var(--sh-card); padding: 56px; }
+  .hero h1 { font-size: clamp(40px, 5vw, 60px); line-height: 1.1; letter-spacing: .6px; margin: 20px 0 16px; }
+  .lede { color: var(--slate); max-width: 46ch; margin: 0; }
+  .cta { display: grid; gap: 8px; margin-top: 28px; max-width: 440px; }
+  .cta + .fine { margin: 12px 0 0; }
+
+  /* Widget: the tool itself, styled like Cal's booking card */
+  .widget { background: #fff; border-radius: 12px; box-shadow: var(--sh-ring); padding: 24px; transition: box-shadow .15s; }
+  .widget.over { box-shadow: 0 0 0 2px var(--ink), var(--sh-card); }
+  .w-head { display: flex; gap: 12px; align-items: center; }
+  .ico { width: 40px; height: 40px; border-radius: 9999px; background: var(--paper); display: grid; place-items: center; flex: none; }
+  .ico svg { width: 20px; height: 20px; fill: none; stroke: var(--graphite); stroke-width: 1.4; }
+  .w-kicker { font-size: 13px; color: var(--slate); letter-spacing: -.2px; }
+  .w-kicker.loaded { color: var(--graphite); font-weight: 500; }
+  .w-title { font-size: 20px; line-height: 1.3; letter-spacing: .2px; }
+  .w-desc { font-size: 14px; color: var(--slate); margin: 12px 0 16px; }
+  .rules { margin: 0 -24px 20px; border-top: 1px solid var(--silver); }
+  .rule { position: relative; display: flex; align-items: center; justify-content: space-between; gap: 16px; padding: 11px 24px; border-bottom: 1px solid var(--silver); cursor: pointer; }
+  .rule b { display: block; font-size: 14px; letter-spacing: -.2px; }
+  .rule small { display: block; font-size: 12.5px; color: var(--slate); letter-spacing: -.24px; }
+  .rule input { position: absolute; opacity: 0; pointer-events: none; }
+  .track { flex: none; position: relative; width: 32px; height: 18px; border-radius: 9999px; background: var(--silver); transition: background .15s; }
+  .track::after { content: ""; position: absolute; top: 2px; left: 2px; width: 14px; height: 14px; border-radius: 50%; background: #fff; box-shadow: var(--sh-chip); transition: transform .15s; }
+  .rule input:checked + .track { background: var(--ink); }
+  .rule input:checked + .track::after { transform: translateX(14px); }
+  .rule input:focus-visible + .track { outline: 2px solid var(--blue); outline-offset: 2px; }
+  .files { list-style: none; margin: 0; padding: 0; }
+  .files li { display: flex; align-items: center; gap: 10px; padding: 10px 24px; border-bottom: 1px solid var(--silver); font-size: 14px; font-weight: 400; }
+  .files li.empty { color: var(--slate); font-weight: 300; justify-content: center; padding: 22px 24px; }
+  .files .f-ico { width: 28px; height: 28px; border-radius: 8px; background: var(--paper); display: grid; place-items: center; flex: none; }
+  .files .f-ico svg { width: 15px; height: 15px; fill: none; stroke: var(--graphite); stroke-width: 1.4; }
+  .files .f-name { min-width: 0; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+  .files .meta { margin-left: auto; color: var(--slate); font-size: 12.5px; white-space: nowrap; }
+  .files button { border: 0; background: none; color: var(--stone); font-size: 18px; line-height: 1; padding: 2px 6px; border-radius: 6px; cursor: pointer; }
+  .files button:hover { background: var(--paper); color: var(--ink); }
+
+  /* Sections */
+  .h-lg { font-size: clamp(32px, 4vw, 48px); line-height: 1.1; letter-spacing: .48px; text-align: center; }
+  .sub { text-align: center; color: var(--slate); max-width: 600px; margin: 14px auto 0; }
+  .sub b { font-family: var(--display); font-weight: 400; letter-spacing: .2px; }
+  .actions { display: flex; justify-content: center; gap: 8px; flex-wrap: wrap; margin-top: 24px; }
+  .warn { max-width: 640px; margin: 20px auto 0; }
+  .panel { background: #fff; border-radius: 12px; box-shadow: var(--sh-card); margin-top: 40px; overflow: hidden; }
+  .panel-top { display: flex; align-items: center; justify-content: space-between; gap: 12px; flex-wrap: wrap; padding: 14px 20px; border-bottom: 1px solid var(--silver); }
+  .pickers { display: flex; gap: 12px; flex-wrap: wrap; align-items: center; font-size: 13px; color: var(--slate); }
+  .pickers label { display: flex; align-items: center; gap: 6px; }
+  .table-wrap { overflow: auto; max-height: 460px; }
+  table { border-collapse: collapse; width: 100%; font-size: 13.5px; font-weight: 400; letter-spacing: -.1px; }
+  th, td { padding: 9px 14px; border-bottom: 1px solid var(--silver); text-align: left; white-space: nowrap; }
+  th { position: sticky; top: 0; z-index: 1; background: #fafafa; font-weight: 500; font-size: 12.5px; color: var(--slate); }
+  tr:last-child td { border-bottom: 0; }
+  td.num, th.num { text-align: right; font-variant-numeric: tabular-nums; }
+  tr.total td { font-weight: 500; background: #fafafa; }
+  td.yes { text-align: center; color: var(--graphite); }
+  td.no { text-align: center; color: var(--slate); background: var(--info); }
+
+  /* Feature cards with a small piece of UI at the bottom */
+  .cards { display: grid; grid-template-columns: repeat(3, minmax(0, 1fr)); gap: 16px; margin-top: 48px; }
+  .feat { background: #fff; border-radius: 12px; box-shadow: var(--sh-card); padding: 24px; display: flex; flex-direction: column; transition: box-shadow .15s; }
+  .feat:hover { box-shadow: var(--sh-hover); }
+  .num-tag { align-self: flex-start; font-size: 12px; color: var(--slate); background: var(--paper); border-radius: 6px; padding: 1px 7px; letter-spacing: -.24px; }
+  .feat h3 { font-size: 20px; line-height: 1.3; letter-spacing: .2px; margin: 16px 0 4px; }
+  .feat p { font-size: 15px; color: var(--slate); margin: 0; }
+  .mini { margin-top: auto; padding-top: 28px; }
+  .mini-rows { border-radius: 8px; box-shadow: rgba(34,42,53,.1) 0 0 0 1px; overflow: hidden; font-size: 12.5px; font-weight: 400; }
+  .mini-rows div { display: flex; justify-content: space-between; gap: 12px; padding: 7px 10px; border-bottom: 1px solid var(--silver); }
+  .mini-rows div:last-child { border-bottom: 0; }
+  .mini-rows span:first-child { color: var(--slate); }
+  .mini-rows span:last-child { font-family: var(--mono); font-size: 12px; letter-spacing: 0; text-align: right; }
+  .mini-rows .to { background: #fafafa; }
+  .mini-rows .to span { color: var(--ink) !important; }
+
+  footer .bar { justify-content: space-between; flex-wrap: wrap; font-size: 13px; color: var(--slate); letter-spacing: -.2px; }
+  footer .bar a { color: var(--slate); text-decoration: none; margin-left: 16px; }
+  footer .bar a:hover { color: var(--ink); }
+
+  @media (max-width: 960px) {
+    .hero { grid-template-columns: 1fr; padding: 32px 24px; gap: 36px; }
+    .cards { grid-template-columns: 1fr; }
+    .section { padding: 64px 16px; }
+  }
+  @media (max-width: 720px) {
+    .bar { flex-wrap: wrap; gap: 8px 16px; padding: 12px 16px; }
+    .nav { order: 3; width: 100%; margin: 0 -10px; overflow-x: auto; }
+    .btn-rect { margin-left: auto; }
+    .pad { padding: 12px; }
+  }
 </style>
 </head>
 <body>
-<header class="top">
-  <div class="wrap">
-    <a class="brand" href="https://www.linkedin.com/in/afiq-izzudin-27aaa936b">Afiq Izzudin <span>/ Office Toolkit</span></a>
-    <nav class="tools" aria-label="Tools">
+<header class="band">
+  <div class="frame bar">
+    <a class="wordmark" href="https://www.linkedin.com/in/afiq-izzudin-27aaa936b">Afiq Izzudin</a>
+    <nav class="nav" aria-label="Office Toolkit">
       <a href="../excel-data-cleaner/">Data Cleaner</a>
       <a href="../excel-report-merger/" aria-current="page">Report Merger</a>
       <a href="../automation-roi-calculator/">ROI Calculator</a>
     </nav>
+    <a class="btn-rect" href="https://github.com/Afiqizzudinnn/excel-report-merger">View code <svg class="chev" viewBox="0 0 16 16" aria-hidden="true"><path d="M6 4l4 4-4 4"/></svg></a>
   </div>
 </header>
 
-<main class="wrap">
-  <section class="hero">
-    <h1>Excel Report Merger</h1>
-    <p>Combine Excel files from different branches or teams into one sheet and one summary, even when the column order or spelling is a little different.</p>
-    <div class="badges"><span class="badge">Free</span><span class="badge">No sign-up</span><span class="badge">Your files never leave your computer</span></div>
+<main>
+  <section class="band">
+    <div class="frame pad">
+      <div class="hero">
+        <div>
+          <a class="tag" href="https://github.com/Afiqizzudinnn/excel-report-merger">Free and open source <svg class="chev" viewBox="0 0 16 16" aria-hidden="true"><path d="M6 4l4 4-4 4"/></svg></a>
+          <h1>Turn every branch's report into one sheet</h1>
+          <p class="lede">Each branch sends its own file, with the columns in a different order and “Sales (RM)” spelt three ways. Add the files and get one merged sheet, a total by branch, and a check of anything that does not line up.</p>
+          <div class="cta">
+            <button class="pill ink" id="sample">Try it with 3 sample branch reports</button>
+            <button class="pill soft" id="pick">Add your own files <svg class="chev" viewBox="0 0 16 16" aria-hidden="true"><path d="M6 4l4 4-4 4"/></svg></button>
+          </div>
+          <p class="fine">Runs in your browser. Your files are never uploaded.</p>
+          <input type="file" id="file" accept=".xlsx,.xls,.csv" multiple hidden>
+        </div>
+
+        <div class="widget" id="drop">
+          <div class="w-head">
+            <span class="ico"><svg viewBox="0 0 20 20" aria-hidden="true"><rect x="5.5" y="2.5" width="11" height="12" rx="2"/><path d="M3.5 6.5v9a2 2 0 0 0 2 2h8"/></svg></span>
+            <div>
+              <div class="w-kicker" id="fileCount">No files yet</div>
+              <h2 class="w-title">Files to merge</h2>
+            </div>
+          </div>
+          <p class="w-desc">Drag 2 or more .xlsx, .xls or .csv files onto this card. Columns are matched by name, so order does not matter.</p>
+          <div class="rules">
+            <ul class="files" id="files"></ul>
+            <label class="rule"><span><b>Use every sheet in each file</b><small>Off means only the first sheet is used</small></span><input type="checkbox" id="allSheets"><span class="track"></span></label>
+          </div>
+          <button class="pill ink wide" id="mergeBtn" disabled>Merge files</button>
+          <div class="note" id="notice" hidden></div>
+        </div>
+      </div>
+    </div>
   </section>
 
-  <section class="card">
-    <div class="step">Step 1</div>
-    <h2>Add your files</h2>
-    <div class="drop" id="drop" tabindex="0" role="button" aria-label="Choose Excel or CSV files">
-      <b>Drop 2 or more Excel or CSV files here</b>
-      <span class="muted">or click to choose · .xlsx, .xls, .csv</span>
+  <section class="band" id="results" hidden>
+    <div class="frame section">
+      <h2 class="h-lg">Your merged report</h2>
+      <p class="sub" id="summaryLine"></p>
+      <div class="actions">
+        <button class="pill ink" id="download">Download merged Excel <svg class="chev" viewBox="0 0 16 16" aria-hidden="true"><path d="M6 4l4 4-4 4"/></svg></button>
+      </div>
+      <div class="note warn" id="warnings" hidden></div>
+      <div class="panel">
+        <div class="panel-top">
+          <div class="seg" id="tabs" role="tablist">
+            <button type="button" role="tab" aria-selected="true" data-v="summary">Summary</button>
+            <button type="button" role="tab" aria-selected="false" data-v="colcheck">Column check</button>
+            <button type="button" role="tab" aria-selected="false" data-v="preview">Merged rows</button>
+          </div>
+          <div class="pickers" id="pickers">
+            <label>Group by <select id="groupBy"></select></label>
+            <label>Total of <select id="sumOf"></select></label>
+          </div>
+        </div>
+        <div class="table-wrap" id="summary"></div>
+        <div class="table-wrap" id="colcheck" hidden></div>
+        <div class="table-wrap" id="preview" hidden></div>
+      </div>
+      <p class="fine" style="text-align:center;margin:14px 0 0" id="previewNote"></p>
     </div>
-    <input type="file" id="file" accept=".xlsx,.xls,.csv" multiple hidden>
-    <p class="muted" style="margin:12px 0 0;font-size:14px">No files handy? <button class="link" id="sample">Try it with 3 sample branch reports</button></p>
-    <ul class="files" id="files"></ul>
-    <label class="check"><input type="checkbox" id="allSheets"> Use every sheet in each file (not just the first one)</label>
-    <button class="btn primary" id="mergeBtn" disabled>Merge files</button>
-    <div class="notice" id="notice" hidden></div>
   </section>
 
-  <section class="card" id="results" hidden>
-    <div class="step">Step 2</div>
-    <h2>Your merged report</h2>
-    <div class="stats" id="stats"></div>
-
-    <h3>Summary</h3>
-    <div class="pickers">
-      <label>Group by <select id="groupBy"></select></label>
-      <label>Total of <select id="sumOf"></select></label>
-    </div>
-    <div class="table-wrap" id="summary"></div>
-
-    <h3>Column check</h3>
-    <p class="muted" style="font-size:13px;margin:0 0 8px">Columns are matched by name, ignoring capitals, spaces and symbols, so <b>Sales (RM)</b> and <b>SALES RM</b> count as the same column.</p>
-    <div class="table-wrap" id="colcheck"></div>
-    <ul class="warnlist" id="warnings"></ul>
-
-    <h3>Merged rows</h3>
-    <div class="table-wrap" id="preview"></div>
-    <p class="muted" id="previewNote" style="font-size:13px;margin:8px 0 0"></p>
-
-    <div class="actions">
-      <button class="btn primary" id="download">Download merged Excel</button>
-      <span class="muted" style="font-size:13px">The file has 4 sheets: Merged, Summary, Column Check and Files.</span>
+  <section class="band">
+    <div class="frame section">
+      <h2 class="h-lg">Lines up columns the way a person would</h2>
+      <p class="sub">Three checks so the monthly total is right the first time.</p>
+      <div class="cards">
+        <article class="feat">
+          <span class="num-tag">01</span>
+          <h3>Order and spelling do not matter</h3>
+          <p>Capitals, spaces and brackets are ignored when columns are matched, wherever each branch put them.</p>
+          <div class="mini mini-rows">
+            <div><span>Kuala Lumpur</span><span>Sales (RM)</span></div>
+            <div><span>Penang</span><span>SALES (RM)</span></div>
+            <div><span>Johor Bahru</span><span>sales rm</span></div>
+            <div class="to"><span>Merged as</span><span>Sales (RM)</span></div>
+          </div>
+        </article>
+        <article class="feat">
+          <span class="num-tag">02</span>
+          <h3>Every row keeps its source</h3>
+          <p>A Source File column is added, so any number in the summary can be traced back to the branch that sent it.</p>
+          <div class="mini mini-rows">
+            <div><span>Sales_KL_Mar2026.xlsx</span><span>Office Chair</span></div>
+            <div><span>Sales_Penang_Mar2026.xlsx</span><span>Mouse</span></div>
+            <div><span>Sales_Johor_Mar2026.xlsx</span><span>Monitor</span></div>
+          </div>
+        </article>
+        <article class="feat">
+          <span class="num-tag">03</span>
+          <h3>Gaps get flagged, not dropped</h3>
+          <p>A column that only some files have is kept and called out before it quietly throws off a total.</p>
+          <div class="mini mini-rows">
+            <div><span>Column</span><span>KL · PG · JB</span></div>
+            <div><span>Sales (RM)</span><span>✓ · ✓ · ✓</span></div>
+            <div><span>Salesperson</span><span>missing · missing · ✓</span></div>
+          </div>
+        </article>
+      </div>
     </div>
   </section>
 </main>
 
-<footer>
-  <div class="wrap">
-    Built by <a href="https://www.linkedin.com/in/afiq-izzudin-27aaa936b">Ahmad Afiq Izzudin</a>, Business Process &amp; Automation Analyst, with AI assistance.
-    <span id="srcWrap"> · <a id="src" href="#">View the code on GitHub</a></span>
+<footer class="band">
+  <div class="frame bar">
+    <span>© 2026 Ahmad Afiq Izzudin · Built with AI assistance</span>
+    <span><a href="https://www.linkedin.com/in/afiq-izzudin-27aaa936b">LinkedIn</a><a href="https://github.com/Afiqizzudinnn">GitHub</a></span>
   </div>
 </footer>
 
@@ -154,6 +290,7 @@
 const $ = s => document.querySelector(s);
 const esc = s => String(s).replace(/[&<>"]/g, c => ({ '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;' }[c]));
 const PREVIEW_ROWS = 200;
+const FILE_ICON = '<span class="f-ico"><svg viewBox="0 0 20 20" aria-hidden="true"><rect x="3.5" y="3.5" width="13" height="13" rx="2"/><path d="M3.5 8h13M3.5 12h13M8 8v8.5"/></svg></span>';
 const state = { files: [], m: null };
 
 // ---------- Excel helpers ----------
@@ -287,16 +424,23 @@ function summarise(m, g, s) {
 
 // ---------- UI ----------
 const fmt = n => n.toLocaleString('en-MY', { maximumFractionDigits: 2 });
+const plural = (n, word) => `<b>${n}</b> ${word}${n === 1 ? '' : 's'}`;
 function notice(msg) { $('#notice').textContent = msg; $('#notice').hidden = !msg; }
 const partName = p => state.m.all ? `${p.file} / ${p.sheet}` : p.file;
 
 function renderFiles() {
-  $('#files').innerHTML = state.files.map((f, i) => {
-    const rows = partsOf(f, $('#allSheets').checked).reduce((n, p) => n + p.rows.length, 0);
-    const sheets = f.wb.SheetNames.length;
-    return `<li><span>${esc(f.name)}</span><span class="meta">${rows} rows${sheets > 1 ? ` · ${sheets} sheets` : ''}</span><button data-i="${i}" aria-label="Remove ${esc(f.name)}">×</button></li>`;
-  }).join('');
-  $('#mergeBtn').disabled = state.files.length < 1;
+  const all = $('#allSheets').checked;
+  $('#files').innerHTML = state.files.length
+    ? state.files.map((f, i) => {
+        const rows = partsOf(f, all).reduce((n, p) => n + p.rows.length, 0);
+        const sheets = f.wb.SheetNames.length;
+        return `<li>${FILE_ICON}<span class="f-name">${esc(f.name)}</span><span class="meta">${rows} rows${sheets > 1 ? ` · ${sheets} sheets` : ''}</span><button data-i="${i}" aria-label="Remove ${esc(f.name)}">×</button></li>`;
+      }).join('')
+    : '<li class="empty">Your files will show up here</li>';
+  const n = state.files.length;
+  $('#fileCount').textContent = n ? `${n} ${n === 1 ? 'file' : 'files'} ready` : 'No files yet';
+  $('#fileCount').classList.toggle('loaded', n > 0);
+  $('#mergeBtn').disabled = n < 1;
   $('#results').hidden = true;
 }
 
@@ -313,28 +457,28 @@ function run(scroll) {
   try { state.m = merge($('#allSheets').checked); }
   catch (e) { notice(e.message); return; }
   const m = state.m;
-  $('#stats').innerHTML = [[m.parts.length, m.all ? 'sheets merged' : 'files merged'], [m.rows.length, 'rows in total'], [m.cols.length, 'columns']]
-    .map(([n, l]) => `<div class="stat"><div class="n">${n}</div><div class="l">${l}</div></div>`).join('');
+  $('#summaryLine').innerHTML = `${plural(m.parts.length, m.all ? 'sheet' : 'file')}, ${plural(m.rows.length, 'row')} and ${plural(m.cols.length, 'column')}, lined up by column name.`;
 
-  const groupOpts = m.headers.map((h, i) => ({ h, i })).filter(o => !numericCols(m).includes(o.i));
   const sums = numericCols(m);
+  const groupOpts = m.headers.map((h, i) => i).filter(i => !sums.includes(i));
   const pick = (opts, re) => (opts.find(i => re.test(norm(m.headers[i]))) ?? opts[0]);
-  $('#groupBy').innerHTML = groupOpts.map(o => `<option value="${o.i}">${esc(o.h)}</option>`).join('');
-  $('#groupBy').value = pick(groupOpts.map(o => o.i), /branch|region|outlet|store|department|dept|team|category/);
+  $('#groupBy').innerHTML = groupOpts.map(i => `<option value="${i}">${esc(m.headers[i])}</option>`).join('');
+  $('#groupBy').value = pick(groupOpts, /branch|region|outlet|store|department|dept|team|category/);
   $('#sumOf').innerHTML = `<option value="-1">(count rows only)</option>` + sums.map(i => `<option value="${i}">${esc(m.headers[i])}</option>`).join('');
   $('#sumOf').value = sums.length ? pick(sums, /sales|amount|total|revenue|value|price/) : -1;
   renderSummary();
 
-  const colHead = `<thead><tr><th>Column</th>${m.parts.map(p => `<th>${esc(partName(p))}</th>`).join('')}</tr></thead>`;
+  const colHead = `<thead><tr><th>Column</th>${m.parts.map(p => `<th style="text-align:center">${esc(partName(p))}</th>`).join('')}</tr></thead>`;
   const colBody = m.cols.map(c => `<tr><td>${esc(c.name)}</td>${m.parts.map(p => c.parts.has(p) ? '<td class="yes">✓</td>' : '<td class="no">missing</td>').join('')}</tr>`).join('');
   $('#colcheck').innerHTML = `<table>${colHead}<tbody>${colBody}</tbody></table>`;
-  $('#warnings').innerHTML = m.cols.filter(c => c.parts.size < m.parts.length)
-    .map(c => `<li><b>${esc(c.name)}</b> is only in ${c.parts.size} of ${m.parts.length} ${m.all ? 'sheets' : 'files'}. The other rows are left blank in this column. If it is the same as another column with a different name, rename it in the source file and merge again.</li>`).join('');
+  const gaps = m.cols.filter(c => c.parts.size < m.parts.length);
+  $('#warnings').innerHTML = gaps.map(c => `<b>${esc(c.name)}</b> is only in ${c.parts.size} of ${m.parts.length} ${m.all ? 'sheets' : 'files'}, so the other rows are blank there. If it is the same as another column with a different name, rename it in the source file and merge again.`).join('<br>');
+  $('#warnings').hidden = !gaps.length;
 
   const head = `<thead><tr>${m.headers.map(h => `<th>${esc(h)}</th>`).join('')}</tr></thead>`;
   const body = m.rows.slice(0, PREVIEW_ROWS).map(r => `<tr>${r.map(v => `<td${typeof v === 'number' ? ' class="num"' : ''}>${esc(show(v))}</td>`).join('')}</tr>`).join('');
   $('#preview').innerHTML = `<table>${head}<tbody>${body}</tbody></table>`;
-  $('#previewNote').textContent = m.rows.length > PREVIEW_ROWS ? `Showing the first ${PREVIEW_ROWS} of ${m.rows.length} rows. The download has everything.` : '';
+  $('#previewNote').textContent = (m.rows.length > PREVIEW_ROWS ? `Showing the first ${PREVIEW_ROWS} of ${m.rows.length} rows. ` : '') + 'The download has 4 sheets: Merged, Summary, Column Check and Files.';
   $('#results').hidden = false;
   if (scroll) $('#results').scrollIntoView({ behavior: 'smooth', block: 'start' });
 }
@@ -382,8 +526,7 @@ function sampleFiles() {
 
 // ---------- Wiring ----------
 const drop = $('#drop'), input = $('#file');
-drop.addEventListener('click', () => input.click());
-drop.addEventListener('keydown', e => { if (e.key === 'Enter' || e.key === ' ') { e.preventDefault(); input.click(); } });
+$('#pick').addEventListener('click', () => input.click());
 input.addEventListener('change', () => { addFiles([...input.files]); input.value = ''; });
 ['dragenter', 'dragover'].forEach(t => drop.addEventListener(t, e => { e.preventDefault(); drop.classList.add('over'); }));
 ['dragleave', 'drop'].forEach(t => drop.addEventListener(t, e => { e.preventDefault(); drop.classList.remove('over'); }));
@@ -396,13 +539,15 @@ $('#mergeBtn').addEventListener('click', () => run(true));
 $('#groupBy').addEventListener('change', renderSummary);
 $('#sumOf').addEventListener('change', renderSummary);
 $('#download').addEventListener('click', download);
+$('#tabs').addEventListener('click', e => {
+  const b = e.target.closest('button');
+  if (!b) return;
+  $('#tabs').querySelectorAll('button').forEach(x => x.setAttribute('aria-selected', x === b));
+  ['summary', 'colcheck', 'preview'].forEach(id => { $('#' + id).hidden = id !== b.dataset.v; });
+  $('#pickers').hidden = b.dataset.v !== 'summary';
+});
 
-(() => {
-  const host = location.hostname, repo = location.pathname.split('/').filter(Boolean)[0];
-  if (host.endsWith('.github.io') && repo) $('#src').href = `https://github.com/${host.split('.')[0]}/${repo}`;
-  else $('#srcWrap').hidden = true;
-})();
-
+renderFiles();
 if (typeof XLSX === 'undefined') notice('The spreadsheet library did not load. Check your internet connection and refresh the page.');
 else if (new URLSearchParams(location.search).has('demo')) { state.files = sampleFiles(); renderFiles(); run(false); }
 </script>
