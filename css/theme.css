@@ -1,0 +1,853 @@
+/*
+ * minutecounts theme
+ * Shared by every tool in the Office Toolkit, so keep this file identical across the repos.
+ * Style: Cal.com inspired. Monochrome with one blue accent, pill buttons, soft cards on paper.
+ */
+
+/* ---------- Tokens ---------- */
+
+:root {
+  --ink: #101010;
+  --graphite: #242424;
+  --slate: #6b7280;
+  --stone: #898989;
+  --silver: #e5e7eb;
+  --paper: #f4f4f4;
+  --white: #ffffff;
+  --blue: #0099ff;
+  --info: #eff6fe;
+  --line: #e2e2e2;
+  --mark: #c4c4c4;
+  --hover-ink: #2a2a2a;
+  --hover-paper: #ebebeb;
+  --table-head: #fafafa;
+
+  --shadow-card: rgba(36, 36, 36, 0.05) 0 4px 8px 0;
+  --shadow-hover: rgba(36, 36, 36, 0.7) 0 1px 5px -4px, rgba(36, 36, 36, 0.05) 0 4px 8px 0;
+  --shadow-ring: rgba(19, 19, 22, 0.7) 0 1px 5px -4px, rgba(34, 42, 53, 0.08) 0 0 0 1px, rgba(34, 42, 53, 0.05) 0 4px 8px 0;
+  --shadow-chip: rgba(0, 0, 0, 0.1) 0 1px 3px 0, rgba(0, 0, 0, 0.06) 0 0 2px 0;
+  --shadow-press: rgba(255, 255, 255, 0.15) 0 2px 0 0 inset;
+  --shadow-outline: rgba(34, 42, 53, 0.1) 0 0 0 1px;
+  --focus-ring: 0 0 0 3px rgba(16, 16, 16, 0.08);
+
+  --font-display: "Cal Sans", Poppins, ui-sans-serif, system-ui, sans-serif;
+  --font-ui: Inter, ui-sans-serif, system-ui, -apple-system, "Segoe UI", sans-serif;
+  --font-mono: ui-monospace, SFMono-Regular, Consolas, monospace;
+
+  --radius-sm: 6px;
+  --radius-md: 8px;
+  --radius-lg: 12px;
+  --radius-pill: 9999px;
+}
+
+/* ---------- Base ---------- */
+
+*,
+*::before,
+*::after {
+  box-sizing: border-box;
+}
+
+[hidden] {
+  display: none !important;
+}
+
+html {
+  color-scheme: light;
+  scroll-behavior: smooth;
+}
+
+body {
+  margin: 0;
+  background: var(--paper);
+  color: var(--graphite);
+  font: 300 16px/1.5 var(--font-ui);
+  letter-spacing: -0.19px;
+  -webkit-font-smoothing: antialiased;
+}
+
+a {
+  color: inherit;
+}
+
+button,
+input,
+select {
+  font: inherit;
+  letter-spacing: inherit;
+  color: inherit;
+}
+
+h1,
+h2,
+h3 {
+  margin: 0;
+  font-family: var(--font-display);
+  font-weight: 400;
+  color: var(--graphite);
+}
+
+b {
+  font-weight: 500;
+  color: var(--graphite);
+}
+
+code {
+  padding: 1px 5px;
+  border-radius: 4px;
+  background: var(--paper);
+  font: 400 12px/1.4 var(--font-mono);
+  letter-spacing: 0;
+}
+
+.chev {
+  flex: none;
+  width: 14px;
+  height: 14px;
+  fill: none;
+  stroke: currentColor;
+  stroke-width: 1.6;
+  stroke-linecap: round;
+  stroke-linejoin: round;
+}
+
+/* ---------- Layout: drafting frame with a + where the guide lines cross ---------- */
+
+.band {
+  border-bottom: 1px solid var(--line);
+}
+
+.frame {
+  position: relative;
+  width: min(1200px, 100% - 32px);
+  margin: 0 auto;
+  border-left: 1px solid var(--line);
+  border-right: 1px solid var(--line);
+}
+
+.frame::before,
+.frame::after {
+  content: "";
+  position: absolute;
+  bottom: -5px;
+  z-index: 1;
+  width: 9px;
+  height: 9px;
+  background:
+    linear-gradient(var(--mark), var(--mark)) center / 9px 1px no-repeat,
+    linear-gradient(var(--mark), var(--mark)) center / 1px 9px no-repeat;
+}
+
+.frame::before {
+  left: -5px;
+}
+
+.frame::after {
+  right: -5px;
+}
+
+.pad {
+  padding: 24px;
+}
+
+.section {
+  padding: 96px 48px;
+}
+
+/* ---------- Header and footer ---------- */
+
+.site-bar {
+  display: flex;
+  align-items: center;
+  gap: 24px;
+  min-height: 64px;
+  padding: 0 24px;
+}
+
+.wordmark {
+  color: var(--ink);
+  font-family: var(--font-display);
+  font-size: 22px;
+  letter-spacing: 0.2px;
+  text-decoration: none;
+}
+
+.nav {
+  display: flex;
+  gap: 2px;
+  margin: 0 auto;
+}
+
+.nav a {
+  padding: 6px 10px;
+  border-radius: var(--radius-md);
+  color: var(--slate);
+  font-size: 14px;
+  font-weight: 400;
+  letter-spacing: -0.2px;
+  text-decoration: none;
+  white-space: nowrap;
+  transition: color 0.2s ease;
+}
+
+.nav a:hover {
+  color: var(--graphite);
+}
+
+.nav a[aria-current] {
+  color: var(--ink);
+  font-weight: 500;
+  pointer-events: none;
+}
+
+.site-footer {
+  justify-content: space-between;
+  flex-wrap: wrap;
+  color: var(--slate);
+  font-size: 13px;
+  letter-spacing: -0.2px;
+}
+
+.site-footer a {
+  margin-left: 16px;
+  color: var(--slate);
+  text-decoration: none;
+}
+
+.site-footer a:hover {
+  color: var(--ink);
+}
+
+/* ---------- Buttons ---------- */
+
+.btn-rect {
+  display: inline-flex;
+  align-items: center;
+  gap: 4px;
+  padding: 7px 10px 7px 14px;
+  border-radius: var(--radius-md);
+  background: var(--ink);
+  box-shadow: var(--shadow-press);
+  color: var(--white);
+  font-size: 14px;
+  font-weight: 500;
+  text-decoration: none;
+}
+
+.btn-rect:hover {
+  background: var(--hover-ink);
+}
+
+.pill {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  gap: 4px;
+  padding: 10px 20px;
+  border: 0;
+  border-radius: var(--radius-pill);
+  font-size: 14px;
+  font-weight: 500;
+  letter-spacing: -0.2px;
+  text-decoration: none;
+  cursor: pointer;
+  transition: background 0.15s, box-shadow 0.15s;
+}
+
+.pill--ink {
+  background: var(--ink);
+  box-shadow: var(--shadow-press);
+  color: var(--white);
+}
+
+.pill--ink:hover {
+  background: var(--hover-ink);
+}
+
+.pill--soft {
+  background: var(--paper);
+  color: var(--graphite);
+}
+
+.pill--soft:hover {
+  background: var(--hover-paper);
+}
+
+.pill--wide {
+  width: 100%;
+}
+
+.pill:disabled {
+  opacity: 0.35;
+  cursor: not-allowed;
+}
+
+/* ---------- Small controls ---------- */
+
+.tag {
+  display: inline-flex;
+  align-items: center;
+  gap: 2px;
+  padding: 3px 8px 3px 10px;
+  border-radius: var(--radius-pill);
+  background: var(--white);
+  box-shadow: var(--shadow-outline), rgba(34, 42, 53, 0.05) 0 2px 4px 0;
+  color: var(--graphite);
+  font-size: 12px;
+  font-weight: 400;
+  letter-spacing: -0.24px;
+  text-decoration: none;
+}
+
+/* Segmented control: a row of buttons where one is chosen. */
+.seg {
+  display: inline-flex;
+  flex: none;
+  gap: 2px;
+  padding: 2px;
+  border-radius: var(--radius-md);
+  background: var(--paper);
+}
+
+.seg > * {
+  padding: 4px 10px;
+  border: 0;
+  border-radius: var(--radius-sm);
+  background: transparent;
+  color: var(--slate);
+  font-size: 13px;
+  font-weight: 400;
+  white-space: nowrap;
+  cursor: pointer;
+}
+
+.seg > [aria-checked="true"],
+.seg > [aria-selected="true"] {
+  background: var(--white);
+  box-shadow: var(--shadow-chip);
+  color: var(--ink);
+  font-weight: 500;
+}
+
+select {
+  padding: 6px 10px;
+  border: 1px solid var(--silver);
+  border-radius: var(--radius-md);
+  background: var(--white);
+  font-size: 14px;
+  font-weight: 400;
+}
+
+select:focus {
+  outline: none;
+  border-color: var(--graphite);
+  box-shadow: var(--focus-ring);
+}
+
+.fine {
+  color: var(--slate);
+  font-size: 12px;
+  letter-spacing: -0.24px;
+}
+
+.fine--center {
+  margin: 14px 0 0;
+  text-align: center;
+}
+
+.note {
+  margin: 12px 0 0;
+  padding: 10px 12px;
+  border-radius: var(--radius-md);
+  background: var(--info);
+  box-shadow: inset 2px 0 0 var(--blue);
+  font-size: 13.5px;
+}
+
+/* ---------- Hero: copy on the left, the tool itself on the right ---------- */
+
+.hero {
+  display: grid;
+  grid-template-columns: minmax(0, 1fr) minmax(0, 1.05fr);
+  align-items: center;
+  gap: 56px;
+  padding: 56px;
+  border-radius: var(--radius-lg);
+  background: var(--white);
+  box-shadow: var(--shadow-card);
+}
+
+.hero h1 {
+  margin: 20px 0 16px;
+  font-size: clamp(40px, 5vw, 60px);
+  line-height: 1.1;
+  letter-spacing: 0.6px;
+}
+
+.lede {
+  max-width: 46ch;
+  margin: 0;
+  color: var(--slate);
+}
+
+.cta {
+  display: grid;
+  gap: 8px;
+  max-width: 440px;
+  margin-top: 28px;
+}
+
+.cta + .fine {
+  margin: 12px 0 0;
+}
+
+/* ---------- Widget: the tool card, styled like Cal's booking card ---------- */
+
+.widget {
+  padding: 24px;
+  border-radius: var(--radius-lg);
+  background: var(--white);
+  box-shadow: var(--shadow-ring);
+  transition: box-shadow 0.15s;
+}
+
+.widget.is-dragover {
+  box-shadow: 0 0 0 2px var(--ink), var(--shadow-card);
+}
+
+.widget-head {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+}
+
+.widget-head__text {
+  min-width: 0;
+}
+
+.icon-badge {
+  display: grid;
+  flex: none;
+  place-items: center;
+  width: 40px;
+  height: 40px;
+  border-radius: var(--radius-pill);
+  background: var(--paper);
+}
+
+.icon-badge svg {
+  width: 20px;
+  height: 20px;
+  fill: none;
+  stroke: var(--graphite);
+  stroke-width: 1.4;
+  stroke-linecap: round;
+}
+
+.widget-kicker {
+  overflow: hidden;
+  color: var(--slate);
+  font-size: 13px;
+  letter-spacing: -0.2px;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.widget-kicker.is-loaded {
+  color: var(--graphite);
+  font-weight: 500;
+}
+
+.widget-title {
+  font-size: 20px;
+  line-height: 1.3;
+  letter-spacing: 0.2px;
+}
+
+.widget-desc {
+  margin: 12px 0 16px;
+  color: var(--slate);
+  font-size: 14px;
+}
+
+/* A full-width list inside the widget, e.g. rows of toggles. */
+.widget-list {
+  margin: 0 -24px 20px;
+  border-top: 1px solid var(--silver);
+}
+
+.toggle-row {
+  position: relative;
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 16px;
+  padding: 11px 24px;
+  border-bottom: 1px solid var(--silver);
+  cursor: pointer;
+}
+
+.toggle-row b {
+  display: block;
+  font-size: 14px;
+  letter-spacing: -0.2px;
+}
+
+.toggle-row small {
+  display: block;
+  color: var(--slate);
+  font-size: 12.5px;
+  letter-spacing: -0.24px;
+}
+
+.toggle-row input {
+  position: absolute;
+  opacity: 0;
+  pointer-events: none;
+}
+
+.switch {
+  position: relative;
+  flex: none;
+  width: 32px;
+  height: 18px;
+  border-radius: var(--radius-pill);
+  background: var(--silver);
+  transition: background 0.15s;
+}
+
+.switch::after {
+  content: "";
+  position: absolute;
+  top: 2px;
+  left: 2px;
+  width: 14px;
+  height: 14px;
+  border-radius: 50%;
+  background: var(--white);
+  box-shadow: var(--shadow-chip);
+  transition: transform 0.15s;
+}
+
+.toggle-row input:checked + .switch {
+  background: var(--ink);
+}
+
+.toggle-row input:checked + .switch::after {
+  transform: translateX(14px);
+}
+
+.toggle-row input:focus-visible + .switch {
+  outline: 2px solid var(--blue);
+  outline-offset: 2px;
+}
+
+/* ---------- Sections ---------- */
+
+.heading-lg {
+  font-size: clamp(32px, 4vw, 48px);
+  line-height: 1.1;
+  letter-spacing: 0.48px;
+  text-align: center;
+}
+
+.sub {
+  max-width: 600px;
+  margin: 14px auto 0;
+  color: var(--slate);
+  text-align: center;
+}
+
+.sub b {
+  font-family: var(--font-display);
+  font-weight: 400;
+  letter-spacing: 0.2px;
+}
+
+.actions {
+  display: flex;
+  flex-wrap: wrap;
+  justify-content: center;
+  gap: 8px;
+  margin-top: 24px;
+}
+
+.panel {
+  overflow: hidden;
+  margin-top: 40px;
+  border-radius: var(--radius-lg);
+  background: var(--white);
+  box-shadow: var(--shadow-card);
+}
+
+.panel-top {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  justify-content: space-between;
+  gap: 12px;
+  padding: 14px 20px;
+  border-bottom: 1px solid var(--silver);
+}
+
+/* ---------- Data tables ---------- */
+
+.table-wrap {
+  overflow: auto;
+  max-height: 460px;
+}
+
+.data-table {
+  width: 100%;
+  border-collapse: collapse;
+  font-size: 13.5px;
+  font-weight: 400;
+  letter-spacing: -0.1px;
+}
+
+.data-table th,
+.data-table td {
+  padding: 9px 14px;
+  border-bottom: 1px solid var(--silver);
+  text-align: left;
+  white-space: nowrap;
+}
+
+.data-table th {
+  position: sticky;
+  top: 0;
+  z-index: 1;
+  background: var(--table-head);
+  color: var(--slate);
+  font-size: 12.5px;
+  font-weight: 500;
+}
+
+.data-table tr:last-child td {
+  border-bottom: 0;
+}
+
+.data-table .num {
+  text-align: right;
+  font-variant-numeric: tabular-nums;
+}
+
+.data-table .total td {
+  background: var(--table-head);
+  font-weight: 500;
+}
+
+/* ---------- Feature cards with a small piece of UI at the bottom ---------- */
+
+.cards {
+  display: grid;
+  grid-template-columns: repeat(3, minmax(0, 1fr));
+  gap: 16px;
+  margin-top: 48px;
+}
+
+.feature {
+  display: flex;
+  flex-direction: column;
+  padding: 24px;
+  border-radius: var(--radius-lg);
+  background: var(--white);
+  box-shadow: var(--shadow-card);
+  transition: box-shadow 0.15s;
+}
+
+.feature:hover {
+  box-shadow: var(--shadow-hover);
+}
+
+.feature h3 {
+  margin: 16px 0 4px;
+  font-size: 20px;
+  line-height: 1.3;
+  letter-spacing: 0.2px;
+}
+
+.feature p {
+  margin: 0;
+  color: var(--slate);
+  font-size: 15px;
+}
+
+.num-tag {
+  align-self: flex-start;
+  padding: 1px 7px;
+  border-radius: var(--radius-sm);
+  background: var(--paper);
+  color: var(--slate);
+  font-size: 12px;
+  letter-spacing: -0.24px;
+}
+
+.mini {
+  margin-top: auto;
+  padding-top: 28px;
+}
+
+.mini-rows {
+  overflow: hidden;
+  border-radius: var(--radius-md);
+  box-shadow: var(--shadow-outline);
+  font-size: 12.5px;
+  font-weight: 400;
+}
+
+.mini-rows > div {
+  display: flex;
+  justify-content: space-between;
+  gap: 12px;
+  padding: 7px 10px;
+  border-bottom: 1px solid var(--silver);
+}
+
+.mini-rows > div:last-child {
+  border-bottom: 0;
+}
+
+.mini-rows span:first-child {
+  color: var(--slate);
+}
+
+.mini-rows span:last-child {
+  font-family: var(--font-mono);
+  font-size: 12px;
+  letter-spacing: 0;
+  text-align: right;
+}
+
+/* ---------- Page transitions between the tools ----------
+ * Chrome, Edge and Safari 18.2+ slide between pages; other browsers just load the page.
+ * The header stays still, the page slides, and each menu label fades between grey and black.
+ * js/page-transition.js picks the direction (forward or back) from the menu order.
+ */
+
+@view-transition {
+  navigation: auto;
+}
+
+.site-header {
+  view-transition-name: site-header;
+}
+
+main {
+  view-transition-name: page;
+}
+
+.nav a:nth-child(1) {
+  view-transition-name: nav-1;
+}
+
+.nav a:nth-child(2) {
+  view-transition-name: nav-2;
+}
+
+.nav a:nth-child(3) {
+  view-transition-name: nav-3;
+}
+
+::view-transition-group(site-header),
+::view-transition-new(site-header) {
+  animation: none;
+}
+
+::view-transition-old(site-header) {
+  display: none;
+}
+
+::view-transition-group(page) {
+  animation-duration: 540ms;
+  animation-timing-function: cubic-bezier(0.22, 0.61, 0.36, 1);
+}
+
+/* The old page leaves before the new one arrives, so the two never overlap. */
+::view-transition-old(page) {
+  animation: 200ms cubic-bezier(0.4, 0, 1, 1) both slide-out-left;
+  mix-blend-mode: normal;
+}
+
+::view-transition-new(page) {
+  animation: 420ms cubic-bezier(0, 0, 0.2, 1) 120ms both slide-in-right;
+  mix-blend-mode: normal;
+}
+
+html:active-view-transition-type(back)::view-transition-old(page) {
+  animation-name: slide-out-right;
+}
+
+html:active-view-transition-type(back)::view-transition-new(page) {
+  animation-name: slide-in-left;
+}
+
+::view-transition-group(nav-1),
+::view-transition-group(nav-2),
+::view-transition-group(nav-3) {
+  animation-duration: 420ms;
+  animation-timing-function: ease;
+}
+
+@keyframes slide-out-left {
+  to { transform: translateX(-40px); opacity: 0; }
+}
+
+@keyframes slide-out-right {
+  to { transform: translateX(40px); opacity: 0; }
+}
+
+@keyframes slide-in-right {
+  from { transform: translateX(72px); opacity: 0; }
+}
+
+@keyframes slide-in-left {
+  from { transform: translateX(-72px); opacity: 0; }
+}
+
+@media (prefers-reduced-motion: reduce) {
+  @view-transition {
+    navigation: none;
+  }
+}
+
+/* ---------- Responsive ---------- */
+
+@media (max-width: 960px) {
+  .hero {
+    grid-template-columns: 1fr;
+    gap: 36px;
+    padding: 32px 24px;
+  }
+
+  .cards {
+    grid-template-columns: 1fr;
+  }
+
+  .section {
+    padding: 64px 16px;
+  }
+}
+
+@media (max-width: 720px) {
+  .site-bar {
+    flex-wrap: wrap;
+    gap: 8px 16px;
+    padding: 12px 16px;
+  }
+
+  .nav {
+    order: 3;
+    width: 100%;
+    margin: 0 -10px;
+    overflow-x: auto;
+  }
+
+  .btn-rect {
+    margin-left: auto;
+  }
+
+  .pad {
+    padding: 12px;
+  }
+}

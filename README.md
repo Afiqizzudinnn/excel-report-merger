@@ -46,11 +46,29 @@ If a team merges branch reports every week and it takes 30 minutes by hand, the 
 
 ## How it is built
 
-- One `index.html` file. No server, no database, no install.
-- [SheetJS](https://sheetjs.com/) reads and writes Excel files in the browser.
-- Plain JavaScript matches the headers, merges the rows and builds the summary.
+No framework, no build step and no server. Plain HTML, CSS and JavaScript modules, with [SheetJS](https://sheetjs.com/) to read and write Excel files in the browser. The merging rules are pure functions, kept apart from the page code, and each sheet is read once and cached.
 
-To run it on your own computer, download `index.html` and open it in Chrome or Edge. It needs internet once to load SheetJS.
+```
+index.html              page markup
+css/theme.css           design system shared by the Office Toolkit
+css/merger.css          styles only this tool uses
+js/page-transition.js   slide between the toolkit pages
+js/excel.js             SheetJS helpers: read, write, cell values
+js/parse.js             text to real numbers
+js/merge.js             the merging and summary rules
+js/sample.js            the 3 sample branch reports
+js/main.js              page code: add files, show, download
+```
+## Run it locally
+
+The scripts are JavaScript modules, so serve the folder with any local web server instead of double-clicking `index.html`:
+
+```bash
+python -m http.server 8000
+```
+
+Then open http://localhost:8000. Internet is needed once to load the fonts and SheetJS.
+
 
 ## About
 
