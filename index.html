@@ -1,0 +1,410 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Excel Report Merger</title>
+<meta name="description" content="Combine Excel files from different branches or teams into one sheet and one summary, even when the columns do not line up.">
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&display=swap" rel="stylesheet">
+<script src="https://cdn.sheetjs.com/xlsx-0.20.3/package/dist/xlsx.full.min.js"></script>
+<style>
+  :root {
+    --bg: #f5f7fa; --surface: #ffffff; --surface-2: #f0f3f7; --text: #152232; --muted: #5d6b7b; --border: #dfe4ea;
+    --primary: #1f3a5f; --primary-ink: #ffffff; --primary-soft: #e7eef7;
+    --good: #0e7a55; --good-soft: #e3f3ec; --warn: #a15c07; --warn-soft: #fdf1df; --changed: #fff1b8;
+    --radius: 12px; --shadow: 0 1px 2px rgba(16,24,40,.05), 0 4px 16px rgba(16,24,40,.06);
+  }
+  @media (prefers-color-scheme: dark) {
+    :root {
+      --bg: #0e131a; --surface: #151c25; --surface-2: #1b2430; --text: #e5eaf0; --muted: #98a5b4; --border: #27323f;
+      --primary: #9dbce3; --primary-ink: #0e131a; --primary-soft: #1d2a3a;
+      --good: #53c79a; --good-soft: #15302a; --warn: #e7a54a; --warn-soft: #33270f; --changed: #4b3f10; --shadow: none;
+    }
+  }
+  * { box-sizing: border-box; }
+  body { margin: 0; font-family: Inter, "Segoe UI", system-ui, -apple-system, sans-serif; background: var(--bg); color: var(--text); line-height: 1.5; font-size: 15px; }
+  .wrap { max-width: 1040px; margin: 0 auto; padding: 0 16px; }
+  header.top { border-bottom: 1px solid var(--border); background: var(--surface); }
+  .top .wrap { display: flex; align-items: center; justify-content: space-between; min-height: 56px; gap: 12px; flex-wrap: wrap; }
+  .brand { font-weight: 700; color: var(--text); text-decoration: none; font-size: 14px; }
+  .brand span { color: var(--muted); font-weight: 500; }
+  nav.tools { display: flex; gap: 4px; flex-wrap: wrap; }
+  nav.tools a { font-size: 13px; color: var(--muted); text-decoration: none; padding: 6px 10px; border-radius: 8px; }
+  nav.tools a:hover { color: var(--text); }
+  nav.tools a[aria-current] { background: var(--primary-soft); color: var(--primary); font-weight: 600; }
+  .hero { padding: 40px 0 24px; }
+  .hero h1 { font-size: 32px; line-height: 1.15; margin: 0 0 8px; letter-spacing: -.5px; }
+  .hero p { margin: 0; color: var(--muted); font-size: 17px; max-width: 660px; }
+  .badges { display: flex; gap: 8px; flex-wrap: wrap; margin-top: 16px; }
+  .badge { font-size: 12.5px; padding: 4px 10px; border-radius: 999px; background: var(--surface); border: 1px solid var(--border); color: var(--muted); }
+  .card { background: var(--surface); border: 1px solid var(--border); border-radius: var(--radius); box-shadow: var(--shadow); padding: 20px; margin-bottom: 16px; }
+  .step { font-size: 12px; font-weight: 700; letter-spacing: .8px; text-transform: uppercase; color: var(--primary); margin-bottom: 4px; }
+  .card h2 { font-size: 18px; margin: 0 0 14px; }
+  .card h3 { font-size: 15px; margin: 22px 0 8px; }
+  .drop { border: 2px dashed var(--border); border-radius: var(--radius); padding: 28px 16px; text-align: center; cursor: pointer; background: var(--surface-2); transition: .15s; }
+  .drop:hover, .drop.over, .drop:focus { border-color: var(--primary); background: var(--primary-soft); outline: none; }
+  .drop b { display: block; font-size: 16px; }
+  .btn { font: inherit; font-weight: 600; font-size: 14px; border-radius: 8px; padding: 10px 16px; border: 1px solid transparent; cursor: pointer; }
+  .btn.primary { background: var(--primary); color: var(--primary-ink); }
+  .btn.ghost { background: transparent; border-color: var(--border); color: var(--text); }
+  .btn:disabled { opacity: .45; cursor: not-allowed; }
+  .link { font: inherit; background: none; border: 0; padding: 0; color: var(--primary); font-weight: 600; cursor: pointer; text-decoration: underline; }
+  .stats { display: grid; grid-template-columns: repeat(auto-fit, minmax(150px, 1fr)); gap: 10px; margin-bottom: 12px; }
+  .stat { background: var(--surface-2); border-radius: 10px; padding: 12px 14px; }
+  .stat .n { font-size: 22px; font-weight: 700; letter-spacing: -.3px; }
+  .stat .l { font-size: 13px; color: var(--muted); }
+  .muted { color: var(--muted); }
+  .notice { background: var(--warn-soft); color: var(--warn); padding: 10px 12px; border-radius: 8px; font-size: 14px; margin-top: 12px; }
+  .table-wrap { overflow: auto; max-height: 440px; border: 1px solid var(--border); border-radius: 10px; }
+  table { border-collapse: collapse; width: 100%; font-size: 13px; }
+  th, td { padding: 7px 10px; border-bottom: 1px solid var(--border); text-align: left; white-space: nowrap; }
+  th { position: sticky; top: 0; background: var(--surface-2); font-weight: 600; z-index: 1; }
+  td.num, th.num { text-align: right; font-variant-numeric: tabular-nums; }
+  footer { padding: 32px 0 48px; color: var(--muted); font-size: 13px; }
+  footer a { color: var(--primary); }
+
+  select { font: inherit; padding: 7px 10px; border-radius: 8px; border: 1px solid var(--border); background: var(--surface); color: var(--text); }
+  .files { list-style: none; padding: 0; margin: 14px 0 0; display: grid; gap: 8px; }
+  .files li { display: flex; align-items: center; gap: 10px; padding: 10px 12px; border: 1px solid var(--border); border-radius: 10px; font-size: 14px; }
+  .files li .meta { color: var(--muted); font-size: 13px; margin-left: auto; white-space: nowrap; }
+  .files li button { background: none; border: 0; color: var(--muted); font-size: 18px; line-height: 1; cursor: pointer; padding: 2px 6px; border-radius: 6px; }
+  .files li button:hover { background: var(--surface-2); color: var(--text); }
+  .check { display: flex; gap: 8px; align-items: center; margin: 14px 0 18px; font-size: 14px; }
+  .check input { accent-color: var(--primary); }
+  td.yes { color: var(--good); font-weight: 600; text-align: center; }
+  td.no { color: var(--warn); background: var(--warn-soft); text-align: center; }
+  tr.total td { font-weight: 700; background: var(--surface-2); }
+  .pickers { display: flex; gap: 12px; flex-wrap: wrap; align-items: center; margin-bottom: 10px; font-size: 14px; }
+  .warnlist { margin: 8px 0 0; padding-left: 18px; color: var(--warn); font-size: 13px; }
+  .actions { display: flex; gap: 12px; align-items: center; flex-wrap: wrap; margin-top: 18px; }
+</style>
+</head>
+<body>
+<header class="top">
+  <div class="wrap">
+    <a class="brand" href="https://www.linkedin.com/in/afiq-izzudin-27aaa936b">Afiq Izzudin <span>/ Office Toolkit</span></a>
+    <nav class="tools" aria-label="Tools">
+      <a href="../excel-data-cleaner/">Data Cleaner</a>
+      <a href="../excel-report-merger/" aria-current="page">Report Merger</a>
+      <a href="../automation-roi-calculator/">ROI Calculator</a>
+    </nav>
+  </div>
+</header>
+
+<main class="wrap">
+  <section class="hero">
+    <h1>Excel Report Merger</h1>
+    <p>Combine Excel files from different branches or teams into one sheet and one summary, even when the column order or spelling is a little different.</p>
+    <div class="badges"><span class="badge">Free</span><span class="badge">No sign-up</span><span class="badge">Your files never leave your computer</span></div>
+  </section>
+
+  <section class="card">
+    <div class="step">Step 1</div>
+    <h2>Add your files</h2>
+    <div class="drop" id="drop" tabindex="0" role="button" aria-label="Choose Excel or CSV files">
+      <b>Drop 2 or more Excel or CSV files here</b>
+      <span class="muted">or click to choose · .xlsx, .xls, .csv</span>
+    </div>
+    <input type="file" id="file" accept=".xlsx,.xls,.csv" multiple hidden>
+    <p class="muted" style="margin:12px 0 0;font-size:14px">No files handy? <button class="link" id="sample">Try it with 3 sample branch reports</button></p>
+    <ul class="files" id="files"></ul>
+    <label class="check"><input type="checkbox" id="allSheets"> Use every sheet in each file (not just the first one)</label>
+    <button class="btn primary" id="mergeBtn" disabled>Merge files</button>
+    <div class="notice" id="notice" hidden></div>
+  </section>
+
+  <section class="card" id="results" hidden>
+    <div class="step">Step 2</div>
+    <h2>Your merged report</h2>
+    <div class="stats" id="stats"></div>
+
+    <h3>Summary</h3>
+    <div class="pickers">
+      <label>Group by <select id="groupBy"></select></label>
+      <label>Total of <select id="sumOf"></select></label>
+    </div>
+    <div class="table-wrap" id="summary"></div>
+
+    <h3>Column check</h3>
+    <p class="muted" style="font-size:13px;margin:0 0 8px">Columns are matched by name, ignoring capitals, spaces and symbols, so <b>Sales (RM)</b> and <b>SALES RM</b> count as the same column.</p>
+    <div class="table-wrap" id="colcheck"></div>
+    <ul class="warnlist" id="warnings"></ul>
+
+    <h3>Merged rows</h3>
+    <div class="table-wrap" id="preview"></div>
+    <p class="muted" id="previewNote" style="font-size:13px;margin:8px 0 0"></p>
+
+    <div class="actions">
+      <button class="btn primary" id="download">Download merged Excel</button>
+      <span class="muted" style="font-size:13px">The file has 4 sheets: Merged, Summary, Column Check and Files.</span>
+    </div>
+  </section>
+</main>
+
+<footer>
+  <div class="wrap">
+    Built by <a href="https://www.linkedin.com/in/afiq-izzudin-27aaa936b">Ahmad Afiq Izzudin</a>, Business Process &amp; Automation Analyst, with AI assistance.
+    <span id="srcWrap"> · <a id="src" href="#">View the code on GitHub</a></span>
+  </div>
+</footer>
+
+<script>
+const $ = s => document.querySelector(s);
+const esc = s => String(s).replace(/[&<>"]/g, c => ({ '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;' }[c]));
+const PREVIEW_ROWS = 200;
+const state = { files: [], m: null };
+
+// ---------- Excel helpers ----------
+// A cell value is a string, a number, a boolean, or a date object { date: true, serial, z }.
+const EPOCH = Date.UTC(1899, 11, 30);
+const ymdToSerial = (y, m, d) => (Date.UTC(y, m - 1, d) - EPOCH) / 864e5;
+const isDate = v => v !== null && typeof v === 'object' && v.date === true;
+
+function cellValue(cell) {
+  if (!cell || cell.v == null) return '';
+  if (cell.t === 'n') return cell.z && XLSX.SSF.is_date(cell.z) ? { date: true, serial: cell.v, z: cell.z } : cell.v;
+  if (cell.t === 'b') return cell.v;
+  if (cell.t === 'e') return cell.w || '#ERROR';
+  return String(cell.v);
+}
+
+function sheetToGrid(ws) {
+  const out = [];
+  if (!ws || !ws['!ref']) return out;
+  const r = XLSX.utils.decode_range(ws['!ref']);
+  for (let R = r.s.r; R <= r.e.r; R++) {
+    const cells = [];
+    for (let C = r.s.c; C <= r.e.c; C++) cells.push(cellValue(ws[XLSX.utils.encode_cell({ r: R, c: C })]));
+    out.push({ n: R + 1, cells });
+  }
+  return out;
+}
+
+function show(v) {
+  if (v === '' || v == null) return '';
+  if (isDate(v)) return XLSX.SSF.format(v.z, v.serial);
+  if (typeof v === 'number') return String(Math.round(v * 1e6) / 1e6);
+  return String(v);
+}
+
+async function readFile(file) {
+  if (/\.csv$/i.test(file.name)) return { wb: XLSX.read(await file.text(), { type: 'string', raw: true }), csv: true };
+  return { wb: XLSX.read(await file.arrayBuffer(), { type: 'array', cellNF: true }), csv: false };
+}
+
+function sheetFrom(aoa) {
+  const ws = XLSX.utils.aoa_to_sheet(aoa.map(r => r.map(v => isDate(v) ? v.serial : v)));
+  aoa.forEach((r, R) => r.forEach((v, C) => { if (isDate(v)) ws[XLSX.utils.encode_cell({ r: R, c: C })].z = v.z; }));
+  ws['!cols'] = aoa[0].map((_, c) => ({ wch: Math.min(50, Math.max(8, ...aoa.map(r => show(r[c]).length + 2))) }));
+  return ws;
+}
+
+// Returns { n, formatted } or null. "formatted" means the text had a currency, commas or brackets.
+function parseNumberString(s) {
+  let t = s.trim(), neg = false, formatted = false;
+  if (/^\(.+\)$/.test(t)) { neg = true; formatted = true; t = t.slice(1, -1).trim(); }
+  if (t[0] === '-') { neg = !neg; t = t.slice(1).trim(); }
+  const cur = t.match(/^(RM|MYR|SGD|S\$|USD|US\$|\$)\s*/i);
+  if (cur) { formatted = true; t = t.slice(cur[0].length); }
+  if (t[0] === '-') { neg = !neg; t = t.slice(1); }
+  if (/^\d{1,3}(,\d{3})+(\.\d+)?$/.test(t)) { formatted = true; t = t.replace(/,/g, ''); }
+  else if (!/^\d+(\.\d+)?$/.test(t)) return null;
+  const whole = t.split('.')[0];
+  if (whole.length > 1 && whole[0] === '0') return null;   // phone numbers, IDs with a leading zero
+  if (!formatted && whole.length > 9) return null;         // IC, account and card numbers
+  const n = parseFloat(t);
+  return { n: neg ? -n : n, formatted };
+}
+
+// ---------- Merging ----------
+const norm = s => s.toLowerCase().replace(/[^a-z0-9]/g, '');
+const blank = v => show(v).trim() === '';
+const numOf = v => typeof v === 'number' ? v : typeof v === 'string' ? (parseNumberString(v) || {}).n : undefined;
+// A CSV has no number type, so plain numbers in it are turned into real numbers.
+const csvValue = s => { const n = parseNumberString(s); return n && !n.formatted ? n.n : s; };
+
+function partsOf(file, all) {
+  return (all ? file.wb.SheetNames : file.wb.SheetNames.slice(0, 1)).map(sheet => {
+    const grid = sheetToGrid(file.wb.Sheets[sheet]);
+    const h = grid.findIndex(r => r.cells.some(v => !blank(v)));
+    if (h < 0) return null;
+    const headers = grid[h].cells.map((v, i) => show(v).replace(/\s+/g, ' ').trim() || `Column ${i + 1}`);
+    const rows = grid.slice(h + 1)
+      .map(r => r.cells.map(v => file.csv && typeof v === 'string' ? csvValue(v) : v))
+      .filter(cells => cells.some(v => !blank(v)));
+    return { file: file.name, sheet, headers, rows };
+  }).filter(Boolean);
+}
+
+function merge(all) {
+  const parts = state.files.flatMap(f => partsOf(f, all));
+  if (!parts.length) throw new Error('No data found in these files.');
+  const cols = [], index = new Map();
+  for (const p of parts) {
+    const used = new Map();
+    p.map = p.headers.map(hd => {
+      let k = norm(hd) || hd.toLowerCase(), name = hd;
+      const dup = used.get(k) || 0;
+      used.set(k, dup + 1);
+      if (dup) { k += '#' + (dup + 1); name = `${hd} (${dup + 1})`; }   // same header twice in one sheet
+      if (!index.has(k)) { index.set(k, cols.length); cols.push({ name, parts: new Set() }); }
+      cols[index.get(k)].parts.add(p);
+      return index.get(k);
+    });
+  }
+  const lead = all ? ['Source File', 'Source Sheet'] : ['Source File'];
+  const rows = [];
+  for (const p of parts) for (const cells of p.rows) {
+    const r = new Array(cols.length).fill('');
+    p.map.forEach((ci, c) => { if (cells[c] !== undefined) r[ci] = cells[c]; });
+    rows.push(all ? [p.file, p.sheet, ...r] : [p.file, ...r]);
+  }
+  return { parts, cols, all, lead: lead.length, headers: [...lead, ...cols.map(c => c.name)], rows };
+}
+
+function numericCols(m) {
+  return m.headers.map((_, i) => i).filter(i => {
+    let filled = 0, nums = 0;
+    for (const r of m.rows) { if (blank(r[i])) continue; filled++; if (numOf(r[i]) !== undefined) nums++; }
+    return i >= m.lead && filled > 0 && nums / filled >= 0.8;
+  });
+}
+
+function summarise(m, g, s) {
+  const groups = new Map();
+  for (const r of m.rows) {
+    const label = show(r[g]).replace(/\s+/g, ' ').trim() || '(blank)', key = label.toLowerCase();
+    const e = groups.get(key) || { label, rows: 0, total: 0 };
+    e.rows++;
+    if (s >= 0) e.total += numOf(r[s]) || 0;
+    groups.set(key, e);
+  }
+  const list = [...groups.values()].map(e => ({ ...e, total: Math.round(e.total * 100) / 100 }));
+  return list.sort((a, b) => s >= 0 ? b.total - a.total : b.rows - a.rows);
+}
+
+// ---------- UI ----------
+const fmt = n => n.toLocaleString('en-MY', { maximumFractionDigits: 2 });
+function notice(msg) { $('#notice').textContent = msg; $('#notice').hidden = !msg; }
+const partName = p => state.m.all ? `${p.file} / ${p.sheet}` : p.file;
+
+function renderFiles() {
+  $('#files').innerHTML = state.files.map((f, i) => {
+    const rows = partsOf(f, $('#allSheets').checked).reduce((n, p) => n + p.rows.length, 0);
+    const sheets = f.wb.SheetNames.length;
+    return `<li><span>${esc(f.name)}</span><span class="meta">${rows} rows${sheets > 1 ? ` · ${sheets} sheets` : ''}</span><button data-i="${i}" aria-label="Remove ${esc(f.name)}">×</button></li>`;
+  }).join('');
+  $('#mergeBtn').disabled = state.files.length < 1;
+  $('#results').hidden = true;
+}
+
+async function addFiles(list) {
+  notice('');
+  for (const f of list) {
+    try { const { wb, csv } = await readFile(f); state.files.push({ name: f.name, wb, csv }); }
+    catch { notice(`Sorry, "${f.name}" could not be opened. Please use .xlsx, .xls or .csv files.`); }
+  }
+  renderFiles();
+}
+
+function run(scroll) {
+  try { state.m = merge($('#allSheets').checked); }
+  catch (e) { notice(e.message); return; }
+  const m = state.m;
+  $('#stats').innerHTML = [[m.parts.length, m.all ? 'sheets merged' : 'files merged'], [m.rows.length, 'rows in total'], [m.cols.length, 'columns']]
+    .map(([n, l]) => `<div class="stat"><div class="n">${n}</div><div class="l">${l}</div></div>`).join('');
+
+  const groupOpts = m.headers.map((h, i) => ({ h, i })).filter(o => !numericCols(m).includes(o.i));
+  const sums = numericCols(m);
+  const pick = (opts, re) => (opts.find(i => re.test(norm(m.headers[i]))) ?? opts[0]);
+  $('#groupBy').innerHTML = groupOpts.map(o => `<option value="${o.i}">${esc(o.h)}</option>`).join('');
+  $('#groupBy').value = pick(groupOpts.map(o => o.i), /branch|region|outlet|store|department|dept|team|category/);
+  $('#sumOf').innerHTML = `<option value="-1">(count rows only)</option>` + sums.map(i => `<option value="${i}">${esc(m.headers[i])}</option>`).join('');
+  $('#sumOf').value = sums.length ? pick(sums, /sales|amount|total|revenue|value|price/) : -1;
+  renderSummary();
+
+  const colHead = `<thead><tr><th>Column</th>${m.parts.map(p => `<th>${esc(partName(p))}</th>`).join('')}</tr></thead>`;
+  const colBody = m.cols.map(c => `<tr><td>${esc(c.name)}</td>${m.parts.map(p => c.parts.has(p) ? '<td class="yes">✓</td>' : '<td class="no">missing</td>').join('')}</tr>`).join('');
+  $('#colcheck').innerHTML = `<table>${colHead}<tbody>${colBody}</tbody></table>`;
+  $('#warnings').innerHTML = m.cols.filter(c => c.parts.size < m.parts.length)
+    .map(c => `<li><b>${esc(c.name)}</b> is only in ${c.parts.size} of ${m.parts.length} ${m.all ? 'sheets' : 'files'}. The other rows are left blank in this column. If it is the same as another column with a different name, rename it in the source file and merge again.</li>`).join('');
+
+  const head = `<thead><tr>${m.headers.map(h => `<th>${esc(h)}</th>`).join('')}</tr></thead>`;
+  const body = m.rows.slice(0, PREVIEW_ROWS).map(r => `<tr>${r.map(v => `<td${typeof v === 'number' ? ' class="num"' : ''}>${esc(show(v))}</td>`).join('')}</tr>`).join('');
+  $('#preview').innerHTML = `<table>${head}<tbody>${body}</tbody></table>`;
+  $('#previewNote').textContent = m.rows.length > PREVIEW_ROWS ? `Showing the first ${PREVIEW_ROWS} of ${m.rows.length} rows. The download has everything.` : '';
+  $('#results').hidden = false;
+  if (scroll) $('#results').scrollIntoView({ behavior: 'smooth', block: 'start' });
+}
+
+function summaryRows() {
+  const m = state.m, g = +$('#groupBy').value, s = +$('#sumOf').value;
+  const list = summarise(m, g, s);
+  const head = [m.headers[g], 'Rows', ...(s >= 0 ? [`Total ${m.headers[s]}`] : [])];
+  const rows = list.map(e => [e.label, e.rows, ...(s >= 0 ? [e.total] : [])]);
+  const total = ['Grand total', m.rows.length, ...(s >= 0 ? [Math.round(list.reduce((n, e) => n + e.total, 0) * 100) / 100] : [])];
+  return { head, rows, total };
+}
+
+function renderSummary() {
+  const { head, rows, total } = summaryRows();
+  const td = v => typeof v === 'number' ? `<td class="num">${fmt(v)}</td>` : `<td>${esc(v)}</td>`;
+  $('#summary').innerHTML = `<table><thead><tr>${head.map((h, i) => `<th${i ? ' class="num"' : ''}>${esc(h)}</th>`).join('')}</tr></thead><tbody>`
+    + rows.map(r => `<tr>${r.map(td).join('')}</tr>`).join('')
+    + `<tr class="total">${total.map(td).join('')}</tr></tbody></table>`;
+}
+
+function download() {
+  const m = state.m, wb = XLSX.utils.book_new(), s = summaryRows();
+  XLSX.utils.book_append_sheet(wb, sheetFrom([m.headers, ...m.rows]), 'Merged');
+  XLSX.utils.book_append_sheet(wb, sheetFrom([s.head, ...s.rows, s.total]), 'Summary');
+  XLSX.utils.book_append_sheet(wb, sheetFrom([['Column', ...m.parts.map(partName)], ...m.cols.map(c => [c.name, ...m.parts.map(p => c.parts.has(p) ? 'Yes' : 'Missing')])]), 'Column Check');
+  XLSX.utils.book_append_sheet(wb, sheetFrom([['File', 'Sheet', 'Rows'], ...m.parts.map(p => [p.file, p.sheet, p.rows.length]), ['Merged on', new Date().toLocaleString('en-GB'), '']]), 'Files');
+  XLSX.writeFile(wb, 'merged_report.xlsx');
+}
+
+// Three made-up branch sales reports. Penang uses a different column order and casing; Johor has an extra column.
+function sampleFiles() {
+  const PRICE = { 'Laptop Stand': 89, 'Wireless Mouse': 45, 'USB-C Hub': 129, 'Office Chair': 459, 'Monitor 24"': 599 };
+  const d = day => ({ date: true, serial: ymdToSerial(2026, 3, day), z: 'dd/mm/yyyy' });
+  const book = (name, aoa) => { const wb = XLSX.utils.book_new(); XLSX.utils.book_append_sheet(wb, sheetFrom(aoa), 'March'); return { name, wb, csv: false }; };
+  const kl = [[2, 'Office Chair', 4], [3, 'Wireless Mouse', 20], [5, 'Monitor 24"', 6], [9, 'USB-C Hub', 12], [12, 'Laptop Stand', 15], [16, 'Office Chair', 3]];
+  const pg = [[2, 'Wireless Mouse', 14], [4, 'Laptop Stand', 9], [10, 'Monitor 24"', 4], [11, 'USB-C Hub', 7], [18, 'Office Chair', 2]];
+  const jb = [[3, 'Monitor 24"', 5, 'Farah'], [6, 'Wireless Mouse', 18, 'Kumar'], [9, 'Office Chair', 5, 'Farah'], [13, 'Laptop Stand', 11, 'Jason'], [17, 'USB-C Hub', 9, 'Kumar']];
+  return [
+    book('Sales_KL_Mar2026.xlsx', [['Date', 'Branch', 'Product', 'Qty', 'Sales (RM)'], ...kl.map(([day, p, q]) => [d(day), 'Kuala Lumpur', p, q, q * PRICE[p]])]),
+    book('Sales_Penang_Mar2026.xlsx', [['product', 'date', 'branch', 'qty', 'SALES (RM)'], ...pg.map(([day, p, q]) => [p, d(day), 'Penang', q, q * PRICE[p]])]),
+    book('Sales_Johor_Mar2026.xlsx', [['Date', 'Branch', 'Product', 'Qty', 'Sales (RM)', 'Salesperson'], ...jb.map(([day, p, q, who]) => [d(day), 'Johor Bahru', p, q, q * PRICE[p], who])]),
+  ].map(f => ({ ...f, wb: XLSX.read(XLSX.write(f.wb, { type: 'array', bookType: 'xlsx' }), { type: 'array', cellNF: true }) }));
+}
+
+// ---------- Wiring ----------
+const drop = $('#drop'), input = $('#file');
+drop.addEventListener('click', () => input.click());
+drop.addEventListener('keydown', e => { if (e.key === 'Enter' || e.key === ' ') { e.preventDefault(); input.click(); } });
+input.addEventListener('change', () => { addFiles([...input.files]); input.value = ''; });
+['dragenter', 'dragover'].forEach(t => drop.addEventListener(t, e => { e.preventDefault(); drop.classList.add('over'); }));
+['dragleave', 'drop'].forEach(t => drop.addEventListener(t, e => { e.preventDefault(); drop.classList.remove('over'); }));
+drop.addEventListener('drop', e => addFiles([...e.dataTransfer.files]));
+
+$('#files').addEventListener('click', e => { const b = e.target.closest('button[data-i]'); if (b) { state.files.splice(+b.dataset.i, 1); renderFiles(); } });
+$('#allSheets').addEventListener('change', renderFiles);
+$('#sample').addEventListener('click', () => { state.files = sampleFiles(); renderFiles(); run(true); });
+$('#mergeBtn').addEventListener('click', () => run(true));
+$('#groupBy').addEventListener('change', renderSummary);
+$('#sumOf').addEventListener('change', renderSummary);
+$('#download').addEventListener('click', download);
+
+(() => {
+  const host = location.hostname, repo = location.pathname.split('/').filter(Boolean)[0];
+  if (host.endsWith('.github.io') && repo) $('#src').href = `https://github.com/${host.split('.')[0]}/${repo}`;
+  else $('#srcWrap').hidden = true;
+})();
+
+if (typeof XLSX === 'undefined') notice('The spreadsheet library did not load. Check your internet connection and refresh the page.');
+else if (new URLSearchParams(location.search).has('demo')) { state.files = sampleFiles(); renderFiles(); run(false); }
+</script>
+</body>
+</html>
